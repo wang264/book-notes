@@ -1,0 +1,1 @@
+https://github.com/BartVandewoestyne/Effective-Cpp/tree/master/Second_Edition
