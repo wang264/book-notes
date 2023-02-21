@@ -247,4 +247,128 @@ Having the non-const member function call the const version is a safe way to avi
 <br/>
 
 ## **Item 4: Make sure that objects are initialized before they're used**
+Always initialize your objects before you use them as as reading uninitialized values yields undefined behavior.
 
+```cpp
+class PhoneNumber { ... };
+
+class ABEntry { // ABEntry = “Address Book Entry”
+    public:
+        ABEntry(const std::string& name, const std::string& address,
+        const std::list<PhoneNumber>& phones);
+
+    private:
+        std::string theName;
+        std::string theAddress;
+        std::list<PhoneNumber> thePhones;
+        int numTimesConsulted;
+};
+
+ABEntry::ABEntry(const std::string& name, const std::string& address,
+                 const std::list<PhoneNumber>& phones)
+{
+    theName = name; // these are all assignments,
+    theAddress = address; // not initializations
+    thePhones = phones;
+    numTimesConsulted = 0;
+}
+```
+A better way to write the `ABEntry` constructor is to use the member initialization
+list instead of assignments:
+```cpp
+ABEntry::ABEntry(const std::string& name, const std::string& address,
+                 const std::list<PhoneNumber>& phones)
+: theName(name),
+  theAddress(address), // these are now all initializations
+  thePhones(phones),
+  numTimesConsulted(0)
+{} // the ctor body is now empty
+```
+```cpp
+ABEntry::ABEntry()
+: theName(),              // call theName’s default ctor;
+  theAddress(),           // do the same for theAddress;
+  thePhones(),            // and for thePhones;
+  numTimesConsulted(0)    // but explicitly initialize
+{}                        // numTimesConsulted
+```
+If ABEntry had a constructor taking no parameters, it could be impelemnted like this.
+
+<br/>
+
+* Also, data members that are *const* or are references must be initialized, they can not be assigned.
+* Base classes are initilized before derived calsses. 
+* Within a class, dadta members are initialized in the order in which they are declared, even if they are listed in a different order on the memver initialization list. 
+
+**The order of initialization of non-local static objects defined in different translation units.**
+
+A **static object** is one that exists from the time it's constructed untill the end of the program. Static objects are destroyed when the program exits.
+* Local static objects: Static objects inside functions.
+* Non-local static objects: other kinds of static objects.
+
+**Translation unit:** the source code given rise to a signle object file. It's basically a single source file, plus all its #include files. 
+
+**The problem is** if initialization of a non-local static object in one translation unit uses a non-local static object in a different transaltion unit, the object it uses could be uninitialized, becasue the relative order of initialization of non-local static objects definded in different transaltion units is undefined. 
+
+```cpp
+// Suppose you have a FileSystem class that makes
+// files on the Internet look like they’re local. Since your class makes the
+// world look like a single file system, you might create a special object at
+// global or namespace scope representing the single file system
+class FileSystem {              // from your library’s header file
+    public:
+    ...
+        std::size_t numDisks() const; // one of many member functions
+    ...
+};
+extern FileSystem tfs;   // declare object for clients to use
+                         // (“tfs” = “the file system” ); definition
+                         // is in some .cpp file in your library
+```
+
+Now suppose some client creates a class for directories in a file system. Naturally, their class uses the tfs object.
+
+```cpp
+class Directory {       // created by library client
+public:
+   Directory( params );
+    ...
+};
+Directory::Directory( params )
+{
+    ...
+    std::size_t disks = tfs.numDisks(); // use the tfs object
+    ...
+}
+```
+If client have the code `Directory tempDir(params);` unless tfs is initialized before tempDir, tempDir’s constructor will attempt to use tfs before it’s been initialized. You can NOT garentee this. 
+You should move each non-local static object into its own function, where it's declared static. 
+
+```cpp
+class FileSystem { ... };       // as before
+FileSystem& tfs()               // this replaces the tfs object; it could be static in the FileSystem class
+{ 
+    static FileSystem fs; // define and initialize a local static object
+    return fs; // return a reference to it
+}
+class Directory { ... };        // as before
+Directory::Directory( params )  // as before, except references to tfs are now to tfs()
+{
+    ...
+    std::size_t disks = tfs().numDisks();
+    ...
+}
+
+Directory& tempDir() // this replaces the tempDir object; it could be static in the Directory class
+{ 
+    static Directory td( params ); // define/initialize local static object
+    return td; // return reference to it
+}
+```
+C++’s guarantee that local static objects are initialized when the object’s definition is first encountered during a call to that function. So if you replace direct accesses to non-local static objects with calls to functions that return references to local static objects, you’re guaranteed that the references you get back will refer to initialized objects.
+
+
+* Manually initialize objects of built-in type, because C++ only sometimes initializes them itself.
+* In a constructor, prefer use of the member initialization list to assignment inside the body of the constructor. List data members in the initialization list in the same order they’re declared in the class.
+* Avoid initialization order problems across translation units by replacing
+non-local static objects with local static objects.
