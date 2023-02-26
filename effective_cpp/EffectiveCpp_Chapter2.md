@@ -1,6 +1,6 @@
 # Chapter 2: Consturctors, Destructors, and Assignment Operators
 
-### **Item 5: Know what functions C++ silently writes and calls**
+## **Item 5: Know what functions C++ silently writes and calls**
 Empty class is not an "empty class" becasue compiler will generate default constructor, copy constructor, destructor, and copy assignment operator for you if you did not provide them. 
 ```cpp
 class Empty {
@@ -45,7 +45,7 @@ ___
 * Compilers may implicitly generate a class’s default constructor, copy constructor, copy assignment operator, and destructor.
 ___
 
-### **Item 6: Explicitly disallow the use of compiler-generated functions you do not want.** 
+## **Item 6: Explicitly disallow the use of compiler-generated functions you do not want.** 
 If you do not want the compiler-generated copy constructor, and copy assignmetn operator. For example, you want to following code to not compile. 
 ```cpp
 class HomeForSale{...};
@@ -95,7 +95,7 @@ ___
 ___
 * To disallowe functionality, automatically provided by compilers, declare the corresponding member functions private and give no implementations. Using a base class like *Uncopyable* is one way to do this.
 ___
-### **Item 7: Declare destructors virtual in polymorphic base classes.** 
+## **Item 7: Declare destructors virtual in polymorphic base classes.** 
 Example: TimeKeeper Class
 
 ```cpp
@@ -186,12 +186,186 @@ ___
 * Classes not designed to be base classes or not designed to be used polymorphically should not declare virtual destructors. 
 
 ___
-### **Item 8: Prevent exceptions from leaving destructors.** 
+## **Item 8: Prevent exceptions from leaving destructors.** 
+C++ does not prohibit destructors from emitting exceptions, but it certainly discourages that practice. With good reason.
+```cpp
+class Widget {
+    public:
+        ...
+        ~Widget() { ... } // assume this might emit an exception
+};
+void doSomething()
+{
+std::vector<Widget> v;
+...
+} // v is automatically destroyed here
+```
+if `v` has ten `Widgets` in it, and execption is thrown when trying to delete the first one. Among the destructors call of the other nine Widgets, another call throw exception. Now there are two simultaneously active exceptions, and that’s one too many for C++. Depending on the precise conditions under which such pairs of simultaneously active exceptions arise, program execution either terminates or yields undefined behavior.
 
-### **Item 9: Never call virtual functions during construction or destruction.** 
+**What should we do** if our destructor needs to perform an operation that may fail by throwing an exception?
 
-### **Item 10: Have assignment operators return a reference to *this.** 
+For example, suppose you’re working with a class for database connections:
+```cpp
+class DBConnection {
+    public:
+        ...
+        // function to return DBConnection objects; params omitted for simplicity
+        static DBConnection create(); 
+        void close(); // close connection; throw an exception if closing fails
+};
+```
+For destructor to not throw, we have two options.
 
-### **Item 11: Handle assignment to self in operator=.**
+**Terminate the program**
+```cpp
+DBConn::~DBConn()
+{
+    try { db.close(); }
+    catch (...) {
+        make log entry that the call to close failed;
+        std::abort();
+    }
+}
+```
+**Swallow the exception**
+```cpp
+DBConn::~DBConn()
+{
+    try { db.close(); }
+    catch (...) {
+        make log entry that the call to close failed;
+    }
+}
+```
+Neither of these approaches is especially appealing. The **problem** with both is that the program has no way to react to the condition that led to close throwing an exception in the first place. A better strategy is to design DBConn’s interface so that its clients have an opportunity to react to problems that may arise.
+```cpp
+class DBConn {
+    public:
+        ...
+        void close() // new function for client use
+        { 
+            db.close();
+            closed = true;
+        }
+        ~DBConn()
+        {
+            if (!closed) {
+                try { // close the connection if the client didn’t
+                    db.close(); 
+                }
+                catch (...) { // if closing fails, note that and terminate or swallow
+                    make log entry that call to close failed; 
+                    ... 
+                }
+            }
+        }
+    private:
+        DBConnection db;
+        bool closed;
+};
+```
+In this example, telling clients to call close themselves doesn’t impose a burden on them; it gives them an opportunity to deal with errors they would otherwise have no chance to react to.
+___
+**Things to Remember**
+* Destructors should never emit exceptions. If functions called in a destructor may throw, the destructor should catch any exceptions, then swallow them or terminate the program.
+* If class clients need to be able to react to exceptions thrown during an operation, the class should provide a regular (i.e., non-destructor) function that performs the operation.
+___
 
-### **Item 12: Copy all parts of an object.**
+## **Item 9: Never call virtual functions during construction or destruction.** 
+
+Example, you got a class hierarchy for modeling stock transactions, and need the transactions be auditable. 
+
+```cpp
+// base class for all transactions
+class Transaction { 
+    public: 
+        Transaction();
+        // make type-dependent log entry
+        virtual void logTransaction() const = 0; 
+        ...
+};
+// implementation of base class ctor
+Transaction::Transaction() { 
+    ...
+    logTransaction(); // as final action, log this transaction
+} 
+class BuyTransaction: public Transaction { // derived class
+    public: // how to log transactions of this type
+        virtual void logTransaction() const; 
+        ...
+};
+class SellTransaction: public Transaction { // derived class
+    public:// how to log transactions of this type
+        virtual void logTransaction() const; 
+        ...
+};
+```
+Consider what happen when this code is executed: `BuyTransaction b;` 
+* `BuyTransaction` constructor will be called but after the `Transaction` constructor call. 
+    * Base class parts of derived class objects are constructed before derived class parts are. 
+* The version of logTransaction that’s called is the one in `Transaction`, not the one in `BuyTransaction` even though the type of object being created is `BuyTransaction`. 
+* During base class construction, virtual functions never go down into derived classes. Instead, the object behaves as if it were of the base type. 
+
+The **same reasoning applies during destruction**. Once a derived class
+destructor has run, the object’s derived class data members assume
+undefined values, so C++ treats them as if they no longer exist. Upon
+entry to the base class destructor, the object becomes a base class
+object, and all parts of C++ — virtual functions, dynamic_casts, etc., —
+treat it that way.
+
+It’s not always so easy to detect calls to virtual functions during construction
+or destruction. The below code is conceptually the same as the earlier version but more insidious.
+```cpp
+class Transaction {
+    public:
+        Transaction()
+        { init(); } // call to non-virtual...
+        virtual void logTransaction() const = 0;
+        ...
+    private:
+        void init(){
+            ...
+            logTransaction(); // ...that calls a virtual!
+        }
+};
+```
+The only way to avoid this problem is to make sure that none of your constructors or destructors call virtual functions on the object being created or destroyed and that all the functions they call obey the same constraint.
+
+One of the way to deal with this is to turn `logTransaction` into a non-virtual function in `Transaction`, then require that derived class constructors pass the necessary log information to the `Transaction` constructor.
+```cpp
+class Transaction {
+    public:
+        explicit Transaction(const std::string& logInfo);
+        // now a non-virtual func
+        void logTransaction(const std::string& logInfo) const; 
+        ...
+};
+Transaction::Transaction(const std::string& logInfo){
+    ... // now a non-virtual call
+    logTransaction(logInfo); 
+} 
+
+class BuyTransaction: public Transaction {
+    public:
+        // pass log info to base class constructor
+        BuyTransaction( parameters): Transaction(createLogString( parameters )) 
+        { ... } 
+        ... 
+    private:
+        static std::string createLogString( parameters );
+}; 
+```
+___
+**Things to Remember**
+* Don’t call virtual functions during construction or destruction, because such calls will never go to a more derived class than that of the currently executing constructor or destructor.
+___
+
+## **Item 10: Have assignment operators return a reference to `*this`.** 
+
+___
+**Things to Remember**
+* Have assignment operators return a reference to `*this`.
+___
+## **Item 11: Handle assignment to self in operator=.**
+
+## **Item 12: Copy all parts of an object.**
