@@ -4,12 +4,12 @@
 Empty class is not an "empty class" becasue compiler will generate default constructor, copy constructor, destructor, and copy assignment operator for you if you did not provide them. 
 ```cpp
 class Empty {
-    public:
-        Empty() { ... }                             // default constructor
-        Empty(const Empty& rhs) { ... }             // copy constructor
-        ~Empty() { ... }                            // destructor — see below
-        // for whether it’s virtual
-        Empty& operator=(const Empty& rhs) { ... }  // copy assignment operator
+  public:
+    Empty() { ... }                             // default constructor
+    Empty(const Empty& rhs) { ... }             // copy constructor
+    ~Empty() { ... }                            // destructor — see below
+    // for whether it’s virtual
+    Empty& operator=(const Empty& rhs) { ... }  // copy assignment operator
 };
 Empty e1;       // will call default constructor, and destructor
 Empty e2(e1);   // copy constructor
@@ -22,12 +22,12 @@ ___
 ```cpp
 template<typename T>
 class NamedObject {
-    public:
-        NamedObject(std::string& name, const T& value);
-        ... // as above, assume no operator= is declared
-    private:
-        std::string& nameValue; // this is now a REFERENCE
-        const T objectValue; // this is now CONST
+  public:
+    NamedObject(std::string& name, const T& value);
+    ... // as above, assume no operator= is declared
+  private:
+    std::string& nameValue; // this is now a REFERENCE
+    const T objectValue; // this is now CONST
 };
 std::string newDog("Persephone");
 std::string oldDog("Satch");
@@ -58,27 +58,27 @@ h1 = h2;                //attempt to copy h2, should not compile!
 
 ```cpp
 class HomeForSale{
-    public:
-        ...
-    private:
-        ...
-        // the name of the function's parameters are omitted, this is OK.
-        HomeForSale(const HomeForSale&);        //declarations only
-        HomeForSale& operator=(const HomeForSale&);
+  public:
+    ...
+  private:
+    ...
+    // the name of the function's parameters are omitted, this is OK.
+    HomeForSale(const HomeForSale&);        //declarations only
+    HomeForSale& operator=(const HomeForSale&);
 }
 ```
 Compiler will complaint in the link time. 
 
 ```cpp
 class Uncopyable {
-    // allow construction and destruction of derived objects
-    protected: 
-        Uncopyable() {} 
-        ~Uncopyable() {} 
-    // but prevent copying
-    private:
-        Uncopyable(const Uncopyable&); 
-        Uncopyable& operator=(const Uncopyable&);
+  // allow construction and destruction of derived objects
+  protected: 
+    Uncopyable() {} 
+    ~Uncopyable() {} 
+  // but prevent copying
+  private:
+    Uncopyable(const Uncopyable&); 
+    Uncopyable& operator=(const Uncopyable&);
 };
 
 // class no longer declars copy ctor or copy assign. operator
@@ -100,10 +100,10 @@ Example: TimeKeeper Class
 
 ```cpp
 class TimeKeeper {
-    public:
-        TimeKeeper();
-        ~TimeKeeper();
-    ...
+  public:
+    TimeKeeper();
+    ~TimeKeeper();
+  ...
 };
 class AtomicClock: public TimeKeeper { ... };
 class WaterClock: public TimeKeeper { ... };
@@ -131,10 +131,10 @@ delete ptk; //release it to avoid resource leak
 give the base class a virtual destructor
 ```cpp
 class TimeKeeper {
-    public:
-        TimeKeeper();
-        virtual ~TimeKeeper();
-        ...
+  public:
+    TimeKeeper();
+    virtual ~TimeKeeper();
+    ...
 };
 
 TimeKeeper *ptk = getTimeKeeper();
@@ -169,8 +169,8 @@ Declare a pure virtual destructor.
 * And a pure virtual function yields an abstract class.
 ```cpp
 class AWOV { // AWOV = “Abstract w/o Virtuals”
-    public:
-        virtual ~AWOV() = 0; // declare pure virtual destructor
+  public:
+    virtual ~AWOV() = 0; // declare pure virtual destructor
 };
 
 AWOV::~AWOV() {} // definition of pure virtual dtor
@@ -190,9 +190,9 @@ ___
 C++ does not prohibit destructors from emitting exceptions, but it certainly discourages that practice. With good reason.
 ```cpp
 class Widget {
-    public:
-        ...
-        ~Widget() { ... } // assume this might emit an exception
+  public:
+    ...
+    ~Widget() { ... } // assume this might emit an exception
 };
 void doSomething()
 {
@@ -207,11 +207,11 @@ if `v` has ten `Widgets` in it, and execption is thrown when trying to delete th
 For example, suppose you’re working with a class for database connections:
 ```cpp
 class DBConnection {
-    public:
-        ...
-        // function to return DBConnection objects; params omitted for simplicity
-        static DBConnection create(); 
-        void close(); // close connection; throw an exception if closing fails
+  public:
+    ...
+    // function to return DBConnection objects; params omitted for simplicity
+    static DBConnection create(); 
+    void close(); // close connection; throw an exception if closing fails
 };
 ```
 For destructor to not throw, we have two options.
@@ -220,48 +220,48 @@ For destructor to not throw, we have two options.
 ```cpp
 DBConn::~DBConn()
 {
-    try { db.close(); }
-    catch (...) {
-        make log entry that the call to close failed;
-        std::abort();
-    }
+  try { db.close(); }
+  catch (...) {
+    make log entry that the call to close failed;
+    std::abort();
+  }
 }
 ```
 **Swallow the exception**
 ```cpp
 DBConn::~DBConn()
 {
-    try { db.close(); }
-    catch (...) {
-        make log entry that the call to close failed;
-    }
+  try { db.close(); }
+  catch (...) {
+    make log entry that the call to close failed;
+  }
 }
 ```
 Neither of these approaches is especially appealing. The **problem** with both is that the program has no way to react to the condition that led to close throwing an exception in the first place. A better strategy is to design DBConn’s interface so that its clients have an opportunity to react to problems that may arise.
 ```cpp
 class DBConn {
-    public:
-        ...
-        void close() // new function for client use
-        { 
-            db.close();
-            closed = true;
+  public:
+    ...
+    void close() // new function for client use
+    { 
+      db.close();
+      closed = true;
+    }
+    ~DBConn()
+    {
+      if (!closed) {
+        try { // close the connection if the client didn’t
+          db.close(); 
         }
-        ~DBConn()
-        {
-            if (!closed) {
-                try { // close the connection if the client didn’t
-                    db.close(); 
-                }
-                catch (...) { // if closing fails, note that and terminate or swallow
-                    make log entry that call to close failed; 
-                    ... 
-                }
-            }
+        catch (...) { // if closing fails, note that and terminate or swallow
+          make log entry that call to close failed; 
+          ... 
         }
-    private:
-        DBConnection db;
-        bool closed;
+      }
+    }
+  private:
+    DBConnection db;
+    bool closed;
 };
 ```
 In this example, telling clients to call close themselves doesn’t impose a burden on them; it gives them an opportunity to deal with errors they would otherwise have no chance to react to.
@@ -278,26 +278,26 @@ Example, you got a class hierarchy for modeling stock transactions, and need the
 ```cpp
 // base class for all transactions
 class Transaction { 
-    public: 
-        Transaction();
-        // make type-dependent log entry
-        virtual void logTransaction() const = 0; 
-        ...
+  public: 
+    Transaction();
+    // make type-dependent log entry
+    virtual void logTransaction() const = 0; 
+    ...
 };
 // implementation of base class ctor
 Transaction::Transaction() { 
-    ...
-    logTransaction(); // as final action, log this transaction
+  ...
+  logTransaction(); // as final action, log this transaction
 } 
 class BuyTransaction: public Transaction { // derived class
-    public: // how to log transactions of this type
-        virtual void logTransaction() const; 
-        ...
+  public: // how to log transactions of this type
+    virtual void logTransaction() const; 
+    ...
 };
 class SellTransaction: public Transaction { // derived class
-    public:// how to log transactions of this type
-        virtual void logTransaction() const; 
-        ...
+  public:// how to log transactions of this type
+    virtual void logTransaction() const; 
+    ...
 };
 ```
 Consider what happen when this code is executed: `BuyTransaction b;` 
@@ -317,16 +317,16 @@ It’s not always so easy to detect calls to virtual functions during constructi
 or destruction. The below code is conceptually the same as the earlier version but more insidious.
 ```cpp
 class Transaction {
-    public:
-        Transaction()
-        { init(); } // call to non-virtual...
-        virtual void logTransaction() const = 0;
+  public:
+    Transaction()
+    { init(); } // call to non-virtual...
+    virtual void logTransaction() const = 0;
+    ...
+  private:
+    void init(){
         ...
-    private:
-        void init(){
-            ...
-            logTransaction(); // ...that calls a virtual!
-        }
+        logTransaction(); // ...that calls a virtual!
+    }
 };
 ```
 The only way to avoid this problem is to make sure that none of your constructors or destructors call virtual functions on the object being created or destroyed and that all the functions they call obey the same constraint.
@@ -334,25 +334,25 @@ The only way to avoid this problem is to make sure that none of your constructor
 One of the way to deal with this is to turn `logTransaction` into a non-virtual function in `Transaction`, then require that derived class constructors pass the necessary log information to the `Transaction` constructor.
 ```cpp
 class Transaction {
-    public:
-        explicit Transaction(const std::string& logInfo);
-        // now a non-virtual func
-        void logTransaction(const std::string& logInfo) const; 
-        ...
+  public:
+    explicit Transaction(const std::string& logInfo);
+    // now a non-virtual func
+    void logTransaction(const std::string& logInfo) const; 
+    ...
 };
 Transaction::Transaction(const std::string& logInfo){
-    ... // now a non-virtual call
-    logTransaction(logInfo); 
+  ... // now a non-virtual call
+  logTransaction(logInfo); 
 } 
 
 class BuyTransaction: public Transaction {
-    public:
-        // pass log info to base class constructor
-        BuyTransaction( parameters): Transaction(createLogString( parameters )) 
-        { ... } 
-        ... 
-    private:
-        static std::string createLogString( parameters );
+  public:
+    // pass log info to base class constructor
+    BuyTransaction( parameters): Transaction(createLogString( parameters )) 
+    { ... } 
+    ... 
+  private:
+    static std::string createLogString( parameters );
 }; 
 ```
 ___
@@ -361,11 +361,200 @@ ___
 ___
 
 ## **Item 10: Have assignment operators return a reference to `*this`.** 
-
+Assignments can be chained together:
+```cpp
+int x, y, z;
+x = y = z = 15;     //chain of assignments
+```
+assignment is right-associative, os the above assignment chain is parsed like this:
+x = (y = (z = 15));
+The way this is implemented is that assignment returns a reference to its left-hand argument, and that's the covention you should follow when you implement assignment operators for your classes:
+```cpp
+// return type is a reference to the current class
+Widget& operator=(const Widget& rhs) 
+{
+  ...
+  return *this; // return the left-hand object
+}
+...
+};
+```
+This convention applies to all assignment operators, not just the standard form shown above. Hence:
+```cpp
+class Widget {
+  public:
+    ...
+    Widget& operator+=(const Widget& rhs) // the convention applies to
+    { // +=, -=, *=, etc.
+      ...
+      return *this;
+    }
+    Widget& operator=(int rhs) // it applies even if the
+    { // operator’s parameter type
+      ... // is unconventional
+      return *this;
+    }
+    ...
+};
+```
+Convention means code that doesn’t follow it will compile. However,unless you have a good reason for doing things differently, don’t.
 ___
 **Things to Remember**
 * Have assignment operators return a reference to `*this`.
 ___
 ## **Item 11: Handle assignment to self in operator=.**
+An assignment to self occurs when an object is assigned to itself:
+```cpp
+class Widget { ... };
+Widget w;
+w = w; // assignment to self
+```
+Assignment isn’t always so recognizable. For example,
+```cpp
+a[i] = a[j]; // assignment to self if i == j.
+*px = *py; // assignment to self if px and py point to the same thing.
+```
+In general, code that operates on references or pointers to multiple objects of the same type needs to consider that the objects might be the same. In fact, **the two objects need not even be declared to be of the same type if they’re from the same hierarchy**, because a base class reference or pointer can refer or point to an object of a derived class type:
+```cpp
+class Base { ... };
+class Derived: public Base { ... };
+// rb and *pd might actually be the same object 
+void doSomething(const Base& rb, Derived* pd); 
+```
+Below is unsafe code. Suppose you creaste a class that holds a raw pointer to a dynamically allocated bitmap.
+```cpp
+class Bitmap { ... };
+class Widget {
+  ...
+  private:
+    Bitmap *pb; // ptr to a heap-allocated object
+};
+
+Widget& Widget::operator=(const Widget& rhs) // unsafe impl. of operator=
+{
+  delete pb; // stop using current bitmap
+  pb = new Bitmap(*rhs.pb); // start using a copy of rhs’s bitmap
+  return *this; // see Item 10
+}
+```
+Why? becasue `rhs` could be the same as `*this`, if this is the case, the delete not only destroys the bitmap for the current object, it destroys the bitmap for `rhs` as well. 
+The traditional way to prevent this error is to check for assigment to self via an *identity test*
+```cpp
+Widget& Widget::operator=(const Widget& rhs)
+{
+  if (this == &rhs) return *this; // identity test: if a self-assignment, do nothing
+  delete pb;
+  pb = new Bitmap(*rhs.pb);
+  return *this;
+}
+```
+However, this implementation is exception-unsafe. Why? If the `new Bitmap` expression yields an exception (either because there is insufficient memory for the allocation or because Bitmap’s copy constructor throws one), the Widget will end up holding a pointer to a deleted Bitmap.
+
+To achieve exception safe, one can modify the code to not to delte `pb` until after we have copied what it points to. However, a beter way by using **copy and swap** technique. 
+```cpp
+class Widget {
+  ...
+  void swap(Widget& rhs); // exchange *this’s and rhs’s data;
+  ... // see Item29 for details
+};
+Widget& Widget::operator=(const Widget& rhs)
+{
+  Widget temp(rhs); // make a copy of rhs’s data
+  swap(temp); // swap *this’s data with the copy’s
+  return *this;
+}
+```
+
+**Things to Remember**
+* Make sure `operator=` is well-behavied when an object is assigned to itself. Techniques include comparing addresses of source and target objects, careful statement orering, and copy-and-swap.
+* Make sure that any fuction operating on more than one object behaves correctly if two or more of the objects are the same. 
 
 ## **Item 12: Copy all parts of an object.**
+Consider a class representing customers, where the copying functions have been manually written so that calls to them are logged:
+```cpp
+void logCall(const std::string& funcName); // make a log entry
+
+class Customer {
+  public:
+    ...
+    Customer(const Customer& rhs);
+    Customer& operator=(const Customer& rhs);
+    ...
+  private:
+    std::string name;
+};
+
+Customer::Customer(const Customer& rhs)
+: name(rhs.name) // copy rhs’s data
+{
+  logCall("Customer copy constructor");
+}
+
+Customer& Customer::operator=(const Customer& rhs)
+{
+  logCall("Customer copy assignment operator");
+  name = rhs.name; // copy rhs’s data
+  return *this; // see Item 10
+}
+```
+Everything here looks fine, and in fact everything is fine — until another data member is added to Customer:
+
+```cpp
+class Date { ... }; // for dates in time
+class Customer {
+  public:
+    ... // as before
+  private:
+    std::string name;
+    Date lastTransaction;
+};
+```
+The code will compile but the existing copying functions are performing a partial copy. (they’re copying the customer’s name, but not its lastTransaction)
+
+One of the most insidious ways this issue can arise is through **inheritance**. Consider:
+```cpp
+class PriorityCustomer: public Customer { // a derived class
+  public:
+    ...
+    PriorityCustomer(const PriorityCustomer& rhs);
+    PriorityCustomer& operator=(const PriorityCustomer& rhs);
+    ...
+  private:
+    int priority;
+};
+
+PriorityCustomer::PriorityCustomer(const PriorityCustomer& rhs)
+: priority(rhs.priority)
+{
+  logCall("PriorityCustomer copy constructor");
+}
+PriorityCustomer& PriorityCustomer::operator=(const PriorityCustomer& rhs)
+{
+  logCall("PriorityCustomer copy assignment operator");
+  priority = rhs.priority;
+  return *this;
+}
+```
+* `PriorityCustomer`’s copying functions will not copy the data members it inherits from `Customer`. 
+* Customer part of the PriorityCustomer object will be initialized by the Customer constructor taking no arguments — by the default constructor. (Assuming it has one. If not, the code won’t compile.)
+
+Instead, derived class copying functions must invoke their corresponding base class functions:
+
+```cpp
+PriorityCustomer::PriorityCustomer(const PriorityCustomer& rhs)
+: Customer(rhs), // invoke base class copy ctor
+  priority(rhs.priority)
+{
+  logCall("PriorityCustomer copy constructor");
+}
+PriorityCustomer& PriorityCustomer::operator=(const PriorityCustomer& rhs)
+{
+  logCall("PriorityCustomer copy assignment operator");
+  Customer::operator=(rhs); // assign base class parts
+  priority = rhs.priority;
+  return *this;
+}
+```
+**Things to Remember**
+* Copying functions should be sure to copy all of an object's data members and all of its base class parts.
+* Don't try to implement one of the copying functions in terms of the other(copy constuctor, copy assignment operator). Instead, put commmon functionality in a third function that both call. 
