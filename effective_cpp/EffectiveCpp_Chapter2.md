@@ -68,7 +68,7 @@ class HomeForSale{
 }
 ```
 Compiler will complaint in the link time. 
-
+In C++ 11, you can leave it as public but do `HomeForSale(const HomeForSale&) = delete` instead.
 ```cpp
 class Uncopyable {
   // allow construction and destruction of derived objects
