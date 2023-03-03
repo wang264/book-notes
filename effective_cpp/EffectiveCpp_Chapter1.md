@@ -240,6 +240,8 @@ Having the non-const member function call the const version is a safe way to avi
 
 <br/>
 
+___
+**Things to Remember**
 * Declaring something *const* helps compilers detect usage errors, *const* can be applied to objects at any scope, to function parameters and return types, and to member functions as a whole. 
 * Compiler enforce bitwise constness, but you should program using logical constness.
 * When *const* and non-*const* member functiosn have essentially identical implementations, code duplication can be avoided by having the non-*const* version call the *const* version. 
@@ -367,7 +369,8 @@ Directory& tempDir() // this replaces the tempDir object; it could be static in 
 ```
 C++’s guarantee that local static objects are initialized when the object’s definition is first encountered during a call to that function. So if you replace direct accesses to non-local static objects with calls to functions that return references to local static objects, you’re guaranteed that the references you get back will refer to initialized objects.
 
-
+___
+**Things to Remember**
 * Manually initialize objects of built-in type, because C++ only sometimes initializes them itself.
 * In a constructor, prefer use of the member initialization list to assignment inside the body of the constructor. List data members in the initialization list in the same order they’re declared in the class.
 * Avoid initialization order problems across translation units by replacing

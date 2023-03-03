@@ -73,6 +73,7 @@ void f()
 ```
 This Item isn’t about auto_ptr, tr1::shared_ptr, or any other kind of smart pointer. It’s about the importance of using objects to manage resources.
 
+___
 **Things to Remember**
 * To prevent resource leaks, use RAII objecsts that acquire resources in their constructors and release them in their destructors. 
 * Two commonly useful RAII classes are `tr1::shared_ptr` and `auto_ptr`. `tr1::shared_ptr` is usually the better choice, because its behavior when copied is intuitve. Copying an `auto_ptr` sets it to null. 
@@ -128,7 +129,7 @@ You usually have the following options for an RAII object is copied.
 * Transfer owenership of the underlying resource.
   * can use `auto_ptr`
 
-
+___
 **Things to Remember**
 * Copying an RAII object entails copying the resource it manages, so the copying behavior of the resource determines the copying behavior of the RAII object.
 * Common RAII class copying behaviors are disallowing copying and performing reference counting, but other behaviors are possible.

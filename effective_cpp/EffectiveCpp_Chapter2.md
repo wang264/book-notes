@@ -464,7 +464,7 @@ Widget& Widget::operator=(const Widget& rhs)
   return *this;
 }
 ```
-
+___
 **Things to Remember**
 * Make sure `operator=` is well-behavied when an object is assigned to itself. Techniques include comparing addresses of source and target objects, careful statement orering, and copy-and-swap.
 * Make sure that any fuction operating on more than one object behaves correctly if two or more of the objects are the same. 
@@ -555,6 +555,7 @@ PriorityCustomer& PriorityCustomer::operator=(const PriorityCustomer& rhs)
   return *this;
 }
 ```
+___
 **Things to Remember**
 * Copying functions should be sure to copy all of an object's data members and all of its base class parts.
 * Don't try to implement one of the copying functions in terms of the other(copy constuctor, copy assignment operator). Instead, put commmon functionality in a third function that both call. 
