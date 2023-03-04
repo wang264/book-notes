@@ -1,8 +1,101 @@
 # Chapter 4: Designs and Declarations
 
 ## Item 18: Make interfaces easy to use correctly and hard to use incorrectly.
+Developing interfaces that are easy to use correctly and hard to useincorrectly requires that you consider the kinds of mistakes that clients might make. 
+
+For example, suppose you’re designing the constructor for a class representing dates in time:
+```cpp
+class Date {
+  public:
+    Date(int month, int day, int year);
+    ...
+};
+```
+Seem reasonable, but there are at least two errors that clients might easily make.
+* First, they might pass parameters in the wrong order:
+  ```cpp
+  Date d(30, 3, 1995); // Oops! Should be “3, 30” , not “30, 3”
+  ```
+* Second, they might pass an invalid month or day number:
+  ```cpp
+  Date d(3, 40, 1995); // Oops! Should be “3, 30” , not “3, 40”
+  ```
+
+A way to prevent client errors by the introduction of new types.
+```cpp
+struct Day{
+  explicit Day(int d): val(d){}
+  int val;
+};
+struct Month{
+  explicit Month(int m): val(m){}
+  int val;
+};
+struct Year{
+  explicit Year(int y): val(y){}
+  int val;
+};
+class Date {
+  public:
+    Date(const Month& m, const Day& d, const Year& y);
+  ...
+};
+
+Date d(30, 3, 1995); // error! wrong types
+Date d(Day(30), Month(3), Year(1995)); // error! wrong types
+Date d(Month(3), Day(30), Year(1995)); // okay, types are correct
+```
+Once the right types are in place, it can sometimes be reasonable to restrict the values of those types.
+
+For example, month（only 12 valid value). We could use enum, but enums are not
+as type-safe since enums can be used like ints(see Item 2). A safer solution is to predefine the set of all valid Months:
+```cpp
+class Month {
+  public:
+    //// functions returning all valid Month values,
+    static Month Jan() { return Month(1); } 
+    static Month Feb() { return Month(2); } 
+    ... 
+    static Month Dec() { return Month(12); } 
+    ... // other member functions
+  private:
+    explicit Month(int m); // prevent creation of new Month values
+  ... // month-specific data
+};
+Date d(Month::Mar(), Day(30), Year(1995));
+```
+___
+
+Any interface that requires that clients remember to do something is prone to incorrect use, because clients can forget to do it. 
+
+For example, Item 13 introduces a factory function that returns pointers to dynamically allocated objects in an Investment hierarchy:
+```cpp
+Investment* createInvestment(); // from Item13; parameters omitted for simplicity
+```
+Client could easily forget to delete a pointer, delete the same pointer more than once.
+A better interface decision would be to preempt the problem by having the factory function
+return a smart pointer in the first place:
+```cpp
+std::tr1::shared_ptr<Investment> createInvestment();
+```
+This essentially forces clients to store the return value in a `tr1::shared_ptr`, all but eliminating the possibility of forgetting to delete the underlying Investment object. 
+
+Suppose an `Investment*` pointer from `createInvestment()` are expected to pass that pointer to a function called `getRidOfInvestment()` instead of using *`delete`* on it. The implementer of `createInvestment` can forestall client to use the wrong deleter by returning a tr1::shared_ptr with getRidOfInvestment bound to it as its deleter.
+
+`tr1::shared_ptr` offers a constructor taking two arguments: the pointer to be managed and the deleter. 
+
+```cpp
+std::tr1::shared_ptr<Investment> createInvestment()
+{ 
+  // create a null shared_ptr with getRidOfInvestment as its deleter; see Item27 for info on static_cast
+  std::tr1::shared_ptr<Investment> retVal(static_cast<Investment*>(0), getRidOfInvestment;
+  ... // make retVal point to the correct object
+  return retVal;
+}
+```
 
 ___
+
 **Things to Remember**
 * Good interfaces are easy to use correctly and hard to use incorrectly. You should strive for these characteristics in all your interfaces.
 * Ways to facilitate correct use include consistency in interfaces and behavioral compatibility with built-in types.
@@ -10,13 +103,79 @@ ___
 * tr1::shared_ptr supports custom deleters. This prevents the cross- DLL problem, can be used to automatically unlock mutexes (see Item 14), etc.
 
 ## Item 19: Treat class design as type design
+In C++, defining a new class defines a new type. So, how do you design effective classes?
 
+* How should objects of your new type be creasted and destroyed? 
+  * constructor, destructor, `new` and `delete`
+* How should object initialization differ from object assignment? 
+  * difference between your constructors and assignment operators.
+* What does it mean for objects of your new type to be passed by value? 
+  * copy constructor
+* What are the restrictions on legal value of your new type?
+* Does your new type fit into an inheritance graph?
+  * `virtual` keyword. 
+* What kind of type conversions are allowed for your new type?
+  * Item 15, implicit and explicit conversion functions. 
+* What operators and functions make sense for the new type?
+* What standard functions should be disallowed?
+  * Item 6, declare private. 
+* Who should have access to the members of your new type?
+  * public, protected, and private member.
+* What is the “undeclared interface” of your new type?
+* How general is your new type?
+* Is a new type really what you need?
 ___
 **Things to Remember**
 * Class design is type design. Before defining a new type, be sure to
 consider all the issues discussed in this Item.
 
 ## Item 20: Perfer pass-by-reference-to-*const* to pass-by-value.
+By default, C++ passes objects to and from functions by value( it inherits from C)
+
+The cost would be one call to the copy constructor and one call to the destructor. 
+Consider pass by reference-to-const:
+```cpp
+bool validateStudent(const Student& s);
+```
+___
+Also, this could prevent the slicing problem.
+
+For example, suppose you’re working on a set of classes for implementing a graphical window system:
+```cpp
+class Window {
+  public:
+    ...
+    std::string name() const; // return name of window
+    virtual void display() const; // dynamic binding, draw window and contents
+};
+
+class WindowWithScrollBars: public Window {
+    public:
+      ...
+      virtual void display() const;
+};
+```
+If you want a function to print out a window’s name and then display the window. Here’s the wrong way:
+```cpp
+void printNameAndDisplay(Window w) // incorrect! parameter may be sliced!
+{ 
+  std::cout << w.name();
+  w.display();
+}
+WindowWithScrollBars wwsb;
+printNameAndDisplay(wwsb);
+```
+Inside `printNameAndDisplay`, w will always act like an object of class Window, regardless of the type of object passed to the function, and will always call `Window::display`.
+
+The way around the slicing problem is to pass w by reference-to-const:
+```cpp
+void printNameAndDisplay(const Window& w) // fine, parameter won’t be sliced
+{ 
+  std::cout << w.name();
+  w.display();
+}
+```
+Now w will act like whatever kind of window is actually passed in.
 
 ___
 **Things to Remember**
