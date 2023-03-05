@@ -1,8 +1,18 @@
 # Chapter 1: Accustoming Yourself to C++
 
+
+<br/>
+<br/>
+
+
+
 ## **Item 1: View C++ as a federation of language**
+
+
 <br/>
 <br/>
+
+
 
 ## **Item 2: Prefer *consts*, *enums*, and *inlines* to *#defines***
 <br/>
@@ -78,10 +88,14 @@ inline void callWithMax(const T& a, const T& b)  // see Item20 for pass by refer
     f(a > b ? a : b);  
 }
 ```
-</br>
+
+
+<br/>
+<br/>
+
 
 ## **Item 3: Use const whenever possible**
-<br/>
+
 
 ```cpp
 char greeting[] = "Helle";
@@ -246,7 +260,12 @@ ___
 * Compiler enforce bitwise constness, but you should program using logical constness.
 * When *const* and non-*const* member functiosn have essentially identical implementations, code duplication can be avoided by having the non-*const* version call the *const* version. 
 
+
+
 <br/>
+<br/>
+
+
 
 ## **Item 4: Make sure that objects are initialized before they're used**
 Always initialize your objects before you use them as as reading uninitialized values yields undefined behavior.

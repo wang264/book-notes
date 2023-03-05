@@ -1,6 +1,12 @@
-# Chapter 4: Designs and Declarations
+# **Chapter 4: Designs and Declarations**
 
-## Item 18: Make interfaces easy to use correctly and hard to use incorrectly.
+
+<br/>
+<br/>
+
+
+
+## **Item 18: Make interfaces easy to use correctly and hard to use incorrectly.**
 Developing interfaces that are easy to use correctly and hard to useincorrectly requires that you consider the kinds of mistakes that clients might make. 
 
 For example, suppose you’re designing the constructor for a class representing dates in time:
@@ -102,7 +108,13 @@ ___
 * Ways to prevent errors include creating new types, restricting operations on types, constraining object values, and eliminating client resource management responsibilities.
 * tr1::shared_ptr supports custom deleters. This prevents the cross- DLL problem, can be used to automatically unlock mutexes (see Item 14), etc.
 
-## Item 19: Treat class design as type design
+
+<br/>
+<br/>
+
+
+
+## **Item 19: Treat class design as type design**
 In C++, defining a new class defines a new type. So, how do you design effective classes?
 
 * How should objects of your new type be creasted and destroyed? 
@@ -129,7 +141,13 @@ ___
 * Class design is type design. Before defining a new type, be sure to
 consider all the issues discussed in this Item.
 
-## Item 20: Perfer pass-by-reference-to-*const* to pass-by-value.
+
+<br/>
+<br/>
+
+
+
+## **Item 20: Perfer pass-by-reference-to-*const* to pass-by-value.**
 By default, C++ passes objects to and from functions by value( it inherits from C)
 
 The cost would be one call to the copy constructor and one call to the destructor. 
@@ -184,32 +202,141 @@ more efficient and it avoids the slicing problem.
 * The rule doesn’t apply to built-in types and STL iterator and function
 object types. For them, pass-by-value is usually appropriate.
 
-## Item 21: Don’t try to return a reference when you must return an object.
+
+<br/>
+<br/>
+
+
+
+## **Item 21: Don’t try to return a reference when you must return an object.**
+
+Consider a class for representing rational numbers, including a function
+for multiplying two rationals together:
+```cpp
+class Rational {
+  public:
+    Rational(int numerator = 0, // see Item 24 for why this
+    int denominator = 1); // ctor isn’t declared explicit
+    ...
+  private:
+    int n, d; // numerator and denominator
+    friend const Rational operator*(const Rational& lhs, const Rational& rhs);
+};
+//clinet code
+Rational a(1, 2); // a = 1/2
+Rational b(3, 5); // b = 3/5
+Rational c = a * b; // c should be 3/10
+```
+This version of operator* is returning its result object by value and you want to save the cost of construction call. 
+
+You can return a reference of `Rational`, but refernce is alias, it is still and object. The object still need to be created, on the stack or on the heap. 
+**Method 1**
+```cpp
+const Rational& operator*(const Rational& lhs, // warning! bad code!
+const Rational& rhs)
+{
+  Rational result(lhs.n * rhs.n, lhs.d * rhs.d);
+  return result;
+}
+```
+Return a reference to someting on the stack, this is bad and will leak memory. 
+
+<br/>
+
+**Method 2**
+```cpp
+const Rational& operator*(const Rational& lhs, // warning! more bad
+const Rational& rhs) // code!
+{
+  Rational *result = new Rational(lhs.n * rhs.n, lhs.d * rhs.d);
+  return *result;
+}
+
+Rational w, x, y, z;
+w = x * y * z; // same as operator*(operator*(x, y), z)
+```
+The problem, who will apply delete to the object conjured up by your use of new? Will have resource leak.
+
+<br/>
+
+**Method 3**
+an implementation based on operator* returning a reference to a static Rational object, one defined inside the function:
+```cpp
+const Rational& operator*(const Rational& lhs, // warning! yet more
+const Rational& rhs) // bad code!
+{
+  //// static object to which a reference will be returned
+  static Rational result; 
+  result = ... ; // multiply lhs by rhs and put then product inside result
+  return result;
+}
+```
+Consider this client code
+```cpp
+bool operator==(const Rational& lhs, // an operator==
+const Rational& rhs); // for Rationals
+Rational a, b, c, d;
+...
+if ((a * b) == (c * d)) {
+  ... // do whatever’s appropriate when the products are equal;
+} else {
+  ... // do whatever’s appropriate when they’re not;
+}
+```
+The expression ((a*b) == (c*d)) will always evaluate to true. if we rewrite the statement like this `if (operator==(operator*(a, b), operator*(c, d)))`, `operator*(c, d)` and `operator*(a, b)` will return the reference to the same static Rational object. 
+
+**The right way to write a function that must return a new object is to have that function return a new object.** For Rational’s operator*, that means either the following code or something essentially equivalent:
+```cpp
+inline const Rational operator*(const Rational& lhs, const Rational& rhs)
+{
+  return Rational(lhs.n * rhs.n, lhs.d * rhs.d);
+}
+```
 
 ___
 **Things to Remember**
 * Never return a pointer or reference to a local stack object, a reference to a heap-allocated object, or a pointer or reference to a local static object if there is a chance that more than one such object will be needed. (Item 4 provides an example of a design where returning a reference to a local static is reasonable, at least in single-threaded
 
-## Item 22: Declare data members private.
+<br/>
+<br/>
+
+## **Item 22: Declare data members private.**
 
 ___
 **Things to Remember**
 * Declare data members private. It gives clients syntactically uniform access to data, affords fine-grained access control, allows invariants to be enforced, and offers class authors implementation flexibility.
 * protected is no more encapsulated than public.
 
-## Item 23: Prefer non-member non-friend functions to member functions.
+
+<br/>
+<br/>
+
+
+## **Item 23: Prefer non-member non-friend functions to member functions.**
 
 ___
 **Things to Remember**
 * Prefer non-member non-friend functions to member functions. Doing so increases encapsulation, packaging flexibility, and functional extensibility.
 
-## Item 24: Declare non-member functions when type conversions should apply to all parameters.
+
+<br/>
+<br/>
+
+
+
+## **Item 24: Declare non-member functions when type conversions should apply to all parameters.**
 
 ___
 **Things to Remember**
 * If you need type conversions on all parameters to a function (including the one that would otherwise be pointed to by the this pointer), the function must be a non-member.
 
-## Item 25: Consider support for a non-throwing swap.
+
+<br/>
+<br/>
+
+
+
+## **Item 25: Consider support for a non-throwing swap.**
 
 ___
 **Things to Remember**

@@ -1,6 +1,12 @@
 # Chapter 3: Resourse Management
 
-## Item 13: Use objects to manage resources
+
+<br/>
+<br/>
+
+
+
+## **Item 13: Use objects to manage resources**
 Suppose we are working with a library for modeling investments(`Investment` Class) and the we use a factory function(Item 7) to get a specific `Investment` objects. 
 ```cpp
 // return ptr to dynamically allocated object in the Investment hierarchy;
@@ -78,7 +84,13 @@ ___
 * To prevent resource leaks, use RAII objecsts that acquire resources in their constructors and release them in their destructors. 
 * Two commonly useful RAII classes are `tr1::shared_ptr` and `auto_ptr`. `tr1::shared_ptr` is usually the better choice, because its behavior when copied is intuitve. Copying an `auto_ptr` sets it to null. 
 
-## Item 14: Think carefully about copying behavior in resource-managing classes.
+
+<br/>
+<br/>
+
+
+
+## **Item 14: Think carefully about copying behavior in resource-managing classes.**
 suppose you’re using a C API to manipulate mutex objects of type Mutex offering functions lock and unlock, a RAII class could be constructed as:
 ```cpp
 void lock(Mutex *pm); // lock mutex pointed to by pm
@@ -134,7 +146,13 @@ ___
 * Copying an RAII object entails copying the resource it manages, so the copying behavior of the resource determines the copying behavior of the RAII object.
 * Common RAII class copying behaviors are disallowing copying and performing reference counting, but other behaviors are possible.
 
-## Item 15: Provide access to raw resources in resource-managing classes.
+
+<br/>
+<br/>
+
+
+
+## **Item 15: Provide access to raw resources in resource-managing classes.**
 
 In some situation, you need a way to convert an object of the RAII class into the raw resource it contains. There are two general ways to do it: **explicit conversion
 and implicit conversion.**
@@ -169,7 +187,13 @@ ___
 * APIs often require access to raw resources, so each RAII class should offer a way to get at the resource it manages.
 * Access may be via explicit conversion or implicit conversion. In general, explicit conversion is safer, but implicit conversion is more convenient for clients.
 
-## Item 16: Use the same form in corresponding uses of *new* and *delete*
+
+<br/>
+<br/>
+
+
+
+## **Item 16: Use the same form in corresponding uses of *new* and _delete_**
 The rule is simple: if you use [] in a new expression, you must use [] in the corresponding delete expression. If you don’t use [] in a new expression, don’t use [] in the matching delete expression.
 
 When you use delete on a pointer, the only way for delete to know whether the array size information is there is for you to tell it. If you use brackets in your use of delete, delete assumes an array is pointed to. Otherwise, it assumes that a single object is pointed to:
@@ -198,7 +222,13 @@ ___
 * If you use [] in a new expression, you must use [] in the corresponding delete expression. If you don’t use [] in a new expression, you mustn’t use [] in the corresponding delete expression.
 
 
-## Item 17: Store *new*ed objects in smart pointers in standalone statements.
+
+<br/>
+<br/>
+
+
+
+## **Item 17: Store *new*ed objects in smart pointers in standalone statements.**
 Suppose we have a function to reveal our processing priority and a second function to do some processing on a dynamically allocated Widget in accord with a priority. The following code would compile but might leak resource. 
 ```cpp
 int priority();

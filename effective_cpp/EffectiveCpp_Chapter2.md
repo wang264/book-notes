@@ -1,5 +1,10 @@
 # Chapter 2: Consturctors, Destructors, and Assignment Operators
 
+
+<br/>
+<br/>
+
+
 ## **Item 5: Know what functions C++ silently writes and calls**
 Empty class is not an "empty class" becasue compiler will generate default constructor, copy constructor, destructor, and copy assignment operator for you if you did not provide them. 
 ```cpp
@@ -44,6 +49,12 @@ ___
 **Things to Remember**
 * Compilers may implicitly generate a class’s default constructor, copy constructor, copy assignment operator, and destructor.
 ___
+
+
+<br/>
+<br/>
+
+
 
 ## **Item 6: Explicitly disallow the use of compiler-generated functions you do not want.** 
 If you do not want the compiler-generated copy constructor, and copy assignmetn operator. For example, you want to following code to not compile. 
@@ -92,9 +103,14 @@ ___
 * By declaring a member function explicitly, you prevent compilers forom generating their own version. 
 * By making the function *private*, you keep people from calling it. 
 * Also, need to declaring member functions *private* and NOT implementing them. (So other member functions and friend functiosn can not call this private function)
-___
 * To disallowe functionality, automatically provided by compilers, declare the corresponding member functions private and give no implementations. Using a base class like *Uncopyable* is one way to do this.
 ___
+
+<br/>
+<br/>
+
+
+
 ## **Item 7: Declare destructors virtual in polymorphic base classes.** 
 Example: TimeKeeper Class
 
@@ -185,7 +201,14 @@ ___
 * Polymorphic base classes should declare virtual destructors. If a class has any virtual functions, it should have a virtual destructor. 
 * Classes not designed to be base classes or not designed to be used polymorphically should not declare virtual destructors. 
 
-___
+
+
+
+<br/>
+<br/>
+
+
+
 ## **Item 8: Prevent exceptions from leaving destructors.** 
 C++ does not prohibit destructors from emitting exceptions, but it certainly discourages that practice. With good reason.
 ```cpp
@@ -269,7 +292,13 @@ ___
 **Things to Remember**
 * Destructors should never emit exceptions. If functions called in a destructor may throw, the destructor should catch any exceptions, then swallow them or terminate the program.
 * If class clients need to be able to react to exceptions thrown during an operation, the class should provide a regular (i.e., non-destructor) function that performs the operation.
-___
+
+
+<br/>
+<br/>
+
+
+
 
 ## **Item 9: Never call virtual functions during construction or destruction.** 
 
@@ -358,7 +387,13 @@ class BuyTransaction: public Transaction {
 ___
 **Things to Remember**
 * Don’t call virtual functions during construction or destruction, because such calls will never go to a more derived class than that of the currently executing constructor or destructor.
-___
+
+
+<br/>
+<br/>
+
+
+
 
 ## **Item 10: Have assignment operators return a reference to `*this`.** 
 Assignments can be chained together:
@@ -401,7 +436,13 @@ Convention means code that doesn’t follow it will compile. However,unless you 
 ___
 **Things to Remember**
 * Have assignment operators return a reference to `*this`.
-___
+
+
+<br/>
+<br/>
+
+
+
 ## **Item 11: Handle assignment to self in operator=.**
 An assignment to self occurs when an object is assigned to itself:
 ```cpp
@@ -468,6 +509,12 @@ ___
 **Things to Remember**
 * Make sure `operator=` is well-behavied when an object is assigned to itself. Techniques include comparing addresses of source and target objects, careful statement orering, and copy-and-swap.
 * Make sure that any fuction operating on more than one object behaves correctly if two or more of the objects are the same. 
+
+
+<br/>
+<br/>
+
+
 
 ## **Item 12: Copy all parts of an object.**
 Consider a class representing customers, where the copying functions have been manually written so that calls to them are logged:
