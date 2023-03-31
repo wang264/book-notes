@@ -302,6 +302,27 @@ ___
 
 ## **Item 22: Declare data members private.**
 
+Public data members, everybody has read-write access to it. But if you declare them private, you can implment no access, read-only, read-write, and wirte only access.
+```cpp
+class AccessLevels {
+  public:
+    ...
+    int getReadOnly() const { return readOnly; }
+    void setReadWrite(int value) { readWrite = value; }
+    int getReadWrite() const { return readWrite; }
+    void setWriteOnly(int value) { writeOnly = value; }
+  private:
+    int noAccess; // no access to this int
+    int readOnly; // read-only access to this int
+    int readWrite; // read-write access to this int
+    int writeOnly; // write-only access to this int
+};
+```
+
+<br/>
+
+Better encapsulation.  Hiding data members behind functional interfaces can off implementation flexibility. 
+
 ___
 **Things to Remember**
 * Declare data members private. It gives clients syntactically uniform access to data, affords fine-grained access control, allows invariants to be enforced, and offers class authors implementation flexibility.
@@ -313,6 +334,29 @@ ___
 
 
 ## **Item 23: Prefer non-member non-friend functions to member functions.**
+
+Imagine a class for representing web browsers. Among the many functions such a class might offer are those to clear the cache of downloaded elements, clear the history of visited URLs, and remove all cookies from the system. 
+
+We can have a **member function** clearEverything perform all these actions together. **Or**, we can have a **non-member function** to do this.
+
+```cpp
+class WebBrowser {
+  public:
+    void clearCache();
+    void clearHistory();
+    void removeCookies();
+    ...
+    void clearEverything(); // calls clearCache, clearHistory, and removeCookies
+};
+
+void clearBrowser(WebBrowser& wb)
+{
+  wb.clearCache();
+  wb.clearHistory();
+  wb.removeCookies();
+}
+```
+Which is better? 
 
 ___
 **Things to Remember**
