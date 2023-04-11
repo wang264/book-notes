@@ -57,7 +57,7 @@ ___
 
 
 ## **Item 6: Explicitly disallow the use of compiler-generated functions you do not want.** 
-If you do not want the compiler-generated copy constructor, and copy assignmetn operator. For example, you want to following code to not compile. 
+If you do not want the compiler-generated copy constructor, and copy assignmetn operator. For example, you want to following code to not compile because you believe every house is different, like your real estate agent said. 
 ```cpp
 class HomeForSale{...};
 HomeForSale h1;
@@ -67,6 +67,7 @@ HomeForSale h3(h1);     //attempy to copy h1, should not compile!
 h1 = h2;                //attempt to copy h2, should not compile!
 ```
 
+What you can do is declare them explicitly and make them priviate so client code can not call it. 
 ```cpp
 class HomeForSale{
   public:
@@ -100,7 +101,7 @@ class HomeForSale: private Uncopyable {
 Compiler will complaint in compile time. 
 ___
 
-* By declaring a member function explicitly, you prevent compilers forom generating their own version. 
+* By declaring a member function explicitly, you prevent compilers from generating their own version. 
 * By making the function *private*, you keep people from calling it. 
 * Also, need to declaring member functions *private* and NOT implementing them. (So other member functions and friend functiosn can not call this private function)
 * To disallowe functionality, automatically provided by compilers, declare the corresponding member functions private and give no implementations. Using a base class like *Uncopyable* is one way to do this.
@@ -173,9 +174,9 @@ ps = pss; // SpecialString* ⇒ std::string*
 // because the SpecialString destructor won’t  be called.
 delete ps; 
 ```
-This might cause trouble if anywhere in an application you somehow convert a pointer to SpecialString into a pointer to *string* and you then use delte on string pointer. The same analysis applies to any class lacking a virtual destructor, including all the STL container types (e.g., vector, list, set, tr1::unordered_map (see Item 54), etc.).
+This might cause trouble if anywhere in an application you somehow convert a pointer to SpecialString into a pointer to *string* and you then use delete on string pointer. The same analysis applies to any class lacking a virtual destructor, including all the STL container types (e.g., vector, list, set, tr1::unordered_map (see Item 54), etc.).
 
-If you’re ever tempted to inherit from a standard container or any other class with a non-virtual destructor, resist the temptation!
+**If you’re ever tempted to inherit from a standard container or any other class with a non-virtual destructor, resist the temptation!**
 ___
 Sometimes, if you have a class that you would like to be abstract, and you don't have any pure virtual functions. **What to do?**
 
@@ -223,7 +224,7 @@ std::vector<Widget> v;
 ...
 } // v is automatically destroyed here
 ```
-if `v` has ten `Widgets` in it, and execption is thrown when trying to delete the first one. Among the destructors call of the other nine Widgets, another call throw exception. Now there are two simultaneously active exceptions, and that’s one too many for C++. Depending on the precise conditions under which such pairs of simultaneously active exceptions arise, program execution either terminates or yields undefined behavior.
+If `v` has ten `Widgets` in it, and execption is thrown when trying to delete the first one. Among the destructors call of the other nine Widgets, another call throw exception. Now there are two simultaneously active exceptions, and that’s one too many for C++. Depending on the precise conditions under which such pairs of simultaneously active exceptions arise, program execution either terminates or yields undefined behavior.
 
 **What should we do** if our destructor needs to perform an operation that may fail by throwing an exception?
 
@@ -343,7 +344,7 @@ object, and all parts of C++ — virtual functions, dynamic_casts, etc., —
 treat it that way.
 
 It’s not always so easy to detect calls to virtual functions during construction
-or destruction. The below code is conceptually the same as the earlier version but more insidious.
+or destruction. The below code is conceptually the same as the earlier version but more insidious. Because `logTransaction()` is wraped inside `init()`. 
 ```cpp
 class Transaction {
   public:

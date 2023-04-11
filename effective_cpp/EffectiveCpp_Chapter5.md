@@ -106,9 +106,54 @@ ___
 <br/>
 
 ## **Item 27: Minimize casting.**
+To cast expression to be type of `T`
+
+**C-style cast:** `(T)expression`
+
+**Function-style casts:** `T(expression)`
+
+C++ also offers four new cast forms (often called new-style or C++-style casts):
+
+`const_cast<T>(expression)`
+* used to cast away the constness of objects. It is the only C++-style cast that can do this.
+
+`dynamic_cast<T>(expression)`
+* primarily used to perform “safe downcasting,” i.e., to determine whether an object is of a particular type in an inheritance hierarchy. 
+* It is the only cast that cannot be performed using the old-style syntax. 
+* It is also the only cast that may have a
+significant runtime cost.
+
+`reinterpret_cast<T>(expression)`
+* Intended for low-level casts that yield implementation-
+dependent (i.e., unportable) results, e.g., casting a pointer
+to an int. 
+* Such casts should be rare outside low-level code.
+
+`static_cast<T>(expression)`
+* Used to force implicit conversions (e.g., non-const object to const object (as in Item 3), int to double, etc.). 
+* It can also be used to perform the reverse of many such conversions (e.g., void* pointers to typed pointers, pointer-to-base to pointer-to-derived)
 
 ___
 
+The old-style casts continue to be legal, but the new forms are preferable.
+* They’re much easier to identify in code. 
+* The more narrowly specified purpose of each cast makes it possible for compilers to diagnose usage errors.
+___
+
+The only time the author use old-style cast is when he want to call an `explicit` constructor to pass an object to a function. 
+```cpp
+class Widget {
+  public:
+    explicit Widget(int size);
+    ...
+};
+
+void doSomeWork(const Widget& w);
+doSomeWork(Widget(15)); // create Widget from int with function-style cast
+doSomeWork(static_cast<Widget>(15)); // create Widget from int with C++-style cast
+```
+
+!TODO!
 **Things to Remember**
 * Avoid casts whenever practical, especially dynamic_casts in performance-sensitive code. If a design requires casting, try to develop a cast-free alternative.
 * When casting is necessary, try to hide it inside a function. Clients can then call the function instead of putting casts in their own code.

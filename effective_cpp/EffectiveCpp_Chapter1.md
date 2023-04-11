@@ -1,4 +1,4 @@
-# Chapter 1: Accustoming Yourself to C++
+# *Chapter 1: Accustoming Yourself to C++*
 
 
 <br/>
@@ -40,7 +40,7 @@ const double ASPECT_RATIO = 1.653;
 ### Two special cases
 * Defining constant pointers:
     * _pointer_ should be declared *const*, usually in addition to what the pointer points to. To define a constant char*-based string in a header file, you will do:
-    * ```const char * const authorName = "Scott Meyers"; ``` 
+    * ```const char* const authorName = "Scott Meyers"; ``` 
     * or you could also do `const std::string authorName("Scott Meyers");`
 * Class-specific constants. 
     * To limit the scope of a constant to a class you need to make it a member. And to ensure there's is at most one copy of the constant, you must make it a *static* member. 
@@ -99,11 +99,13 @@ inline void callWithMax(const T& a, const T& b)  // see Item20 for pass by refer
 
 ```cpp
 char greeting[] = "Helle";
-char *p = greeting;         //non-const pointer, //non-const data
-const char *p = greeting;   //non-const pointer, //const data
-char *const p = greeting;   //const pointer, //non-const data
-const char *const p = greeting; //const pointer, const data
+char* p = greeting;         //non-const pointer, //non-const data
+const char* p = greeting;   //non-const pointer, //const data
+char* const p = greeting;   //const pointer, //non-const data
+const char* const p = greeting; //const pointer, const data
 ```
+**read from right to left**
+
 1. If the word *const* apppers to the left of the asterisk, what it pointed to is constant.
 2. If the word const appears to the right of the asterisk, the pointer itself is constant. 
 3. If *const* appears on both sides, both are constant. 
@@ -120,12 +122,12 @@ When what's pointed to is constant, list *const* before and after the type means
 ```cpp
 std::vector<int> vec;
 ...
-// iter act like a T* const, constant pointer. 
+// iter act like a T* const, (constant pointer) 
 const std::vector<int>::iterator iter = vec.begin();
 *iter =10;      //OK. change what iter points to. 
 ++iter;         //error! iter is const
 
-// clter act like a const T*
+// cIter act like a const T*  (pointer to const)
 std::vector<int>::const_iterator clter = vec.begin();
 *clter=10;      //error! *clter is const
 ++clter;        //fine, change clter
@@ -201,7 +203,7 @@ class CTextBlock{
         std::size_t CTextBlock::length() const
         {
             if (!lengthIsValid)
-            {   // the data memeber not can be modified, even in a const member function.
+            {   // the data memeber now can be modified, even in a const member function.
                 textLength = std::strlen(pText);
                 lengthIsValid = true;
             }
@@ -215,6 +217,22 @@ The function `length()` is logical const, but not bitwise const.
 
 ```cpp
 // code with duplication
+class CTextBlock{
+    public:
+    ...
+        char& operator[](std::size_t position) const {
+            ...
+            return pText[position];}
+    
+        char& operator[](std::size_t position) {
+            ...
+            return pText[position];}
+    ...
+};
+``` 
+
+```cpp
+// code without duplication
 class CTextBlock{
     public:
     ...
@@ -234,23 +252,7 @@ class CTextBlock{
 };
 ```
 
-```cpp
-// code without duplication
-class CTextBlock{
-    public:
-    ...
-        char& operator[](std::size_t position) const {
-            ...
-            return pText[position];}
-    
-        char& operator[](std::size_t position) {
-            ...
-            return pText[position];}
-    ...
-};
-```
-
-Having the non-const member function call the const version is a safe way to avioid code duplication, even though it requires a cast. However, if you were to call a non-const function from a const one, you'd runn the risk that the object you' promised not to modify would be changed.
+**Having the non-const member function call the const version is a safe way to avioid code duplication**, even though it requires a cast. However, if you were to call a non-const function from a const one, you'd runn the risk that the object you' promised not to modify would be changed.
 
 <br/>
 
