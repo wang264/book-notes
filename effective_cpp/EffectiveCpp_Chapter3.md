@@ -8,6 +8,9 @@
 
 ## **Item 13: Use objects to manage resources**
 Suppose we are working with a library for modeling investments(`Investment` Class) and the we use a factory function(Item 7) to get a specific `Investment` objects. 
+
+Below is what we should **NOT** do. 
+
 ```cpp
 // return ptr to dynamically allocated object in the Investment hierarchy;
 // the caller must delete it (parameters omitted for simplicity)
@@ -35,16 +38,14 @@ void f()
 ```
 
 Two critical aspects of using objects to manage resources:
-* Resources are acquired and immediately turned over to resource-
-managing objects. (The idea of using objects to manage resources is often called **Resource Acquisition Is Initialization(RAII)**)
-* Resource-managing objects use their destructors to ensure
-that resources are released.
+* Resources are acquired and immediately turned over to resource-managing objects. (The idea of using objects to manage resources is often called **Resource Acquisition Is Initialization(RAII)**)
+* Resource-managing objects use their destructors to ensure that resources are released.
 
 ___
 `auto_ptr` automatically deletes what it points to when the
 auto_ptr is destroyed so if more than one `auto_ptr` point to the same object, the object would be deleted more than once.
 
-To prevent such problems, auto_ptrs have an unusual characteristic: 
+To prevent such problems, `auto_ptrs` have an unusual characteristic: 
 1. copying them (via copy constructor or copy assignment operator) 
 2. sets them to null. 
 3. and the copying pointer assumes sole ownership of the resource!
@@ -105,7 +106,7 @@ class Lock {
     Mutex *mutexPtr;
 };
 ```
-Clients use `Lock` in the conventional RAII fashion. However, question arise, what should happen if a Lock object is copied?
+Clients use `Lock` in the conventional RAII fashion. However, question arise, **what should happen if a Lock object is copied?**
 ```cpp
 Mutex m; // define the mutex you need to use
 { // create block to define critical section
@@ -117,10 +118,10 @@ Lock ml1(&m); // lock m
 Lock ml2(ml1); // copy ml1 to ml2 — what should happen here?
 ```
 You usually have the following options for an RAII object is copied. 
-* Prohibit copying
+* **Prohibit copying**
   * It make no sense to allow RAII objects to be copied. (likely true for `Lock`)
   * You can declare the copying operations private.(Item 6)
-* Reference-count the underlying resource
+* **Reference-count the underlying resource**
   * This is the case when we hold on to a resource untill the last object using it has been destroyed.
   * use the `tr1::shared_ptr`. Howeever, its default behavior is to delete what it points to when the reference count goes to zero, and that’s not what we want. When we’re done with a Mutex, we want to unlock it, not delete it.
   * Fortunately, tr1::shared_ptr allows specification of a **“deleter”** — a function or function object to be called when the reference count goes to zero. It is an optional second parameter to its constructor
@@ -248,7 +249,9 @@ If the compiler decide to use this order,
 1. Execute “new Widget”.
 2. Call priority.
 3. Call the tr1::shared_ptr constructor.
-If the call to priority yields an exception, In that case, the pointer returned from “new Widget” will be lost. Memory leak.
+
+
+**If the call to priority yields an exception, In that case, the pointer returned from “new Widget” will be lost. Memory leak.**
 
 The way to avoid problems like this is simple: use a separate statement to create the Widget and store it in a smart pointer.
 ```cpp
