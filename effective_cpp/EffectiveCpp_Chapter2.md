@@ -24,6 +24,8 @@ If a constructor is declared in a class, compilers won’t generate a default co
 
 ___
 
+C++ refuse to compile this code, you must define the copy assignment operator yourself if your class members contain **_const_** or **reference**.
+
 ```cpp
 template<typename T>
 class NamedObject {
@@ -80,10 +82,10 @@ class HomeForSale{
 }
 ```
 Compiler will complaint in the link time. 
-In C++ 11, you can leave it as public but do `HomeForSale(const HomeForSale&) = delete` instead.
+In C++ 11, you can leave it as public but put `HomeForSale(const HomeForSale&) = delete` instead.
 ```cpp
 class Uncopyable {
-  // allow construction and destruction of derived objects
+  // allow construction and destruction of derived objects but prevent copying
   protected: 
     Uncopyable() {} 
     ~Uncopyable() {} 
@@ -160,6 +162,9 @@ delete ptk; // now behaves correctly
 ```
 
 ___
+
+It is possible to get bitten by the non-virtual destructor problem even in the complete absence of virtual functions.
+
 
 ```cpp
 // bad idea! std::string has a non-virtual destructor
@@ -240,7 +245,7 @@ class DBConnection {
 ```
 For destructor to not throw, we have two options.
 
-**Terminate the program**
+**Option 1: Terminate the program**
 ```cpp
 DBConn::~DBConn()
 {
@@ -251,7 +256,7 @@ DBConn::~DBConn()
   }
 }
 ```
-**Swallow the exception**
+**Option 2: Swallow the exception**
 ```cpp
 DBConn::~DBConn()
 {
@@ -261,7 +266,7 @@ DBConn::~DBConn()
   }
 }
 ```
-Neither of these approaches is especially appealing. The **problem** with both is that the program has no way to react to the condition that led to close throwing an exception in the first place. A better strategy is to design DBConn’s interface so that its clients have an opportunity to react to problems that may arise.
+Neither of these approaches is especially appealing. The **problem** with both is that the program has no way to react to the condition that led to close throwing an exception in the first place. A better strategy is to design DBConn’s interface so that its **clients have an opportunity to react to problems that may arise**.
 ```cpp
 class DBConn {
   public:
@@ -361,7 +366,7 @@ class Transaction {
 ```
 The only way to avoid this problem is to make sure that none of your constructors or destructors call virtual functions on the object being created or destroyed and that all the functions they call obey the same constraint.
 
-One of the way to deal with this is to turn `logTransaction` into a non-virtual function in `Transaction`, then require that derived class constructors pass the necessary log information to the `Transaction` constructor.
+One of the way to deal with this is to **turn `logTransaction` into a non-virtual function**yes in `Transaction`, then require that derived class constructors pass the necessary log information to the `Transaction` constructor.
 ```cpp
 class Transaction {
   public:
@@ -451,19 +456,25 @@ class Widget { ... };
 Widget w;
 w = w; // assignment to self
 ```
-Assignment isn’t always so recognizable. For example,
+Assignment to self isn’t always so recognizable. For example,
 ```cpp
 a[i] = a[j]; // assignment to self if i == j.
 *px = *py; // assignment to self if px and py point to the same thing.
 ```
-In general, code that operates on references or pointers to multiple objects of the same type needs to consider that the objects might be the same. In fact, **the two objects need not even be declared to be of the same type if they’re from the same hierarchy**, because a base class reference or pointer can refer or point to an object of a derived class type:
+
+In general, code that operates on references or pointers to multiple objects of the same type needs to consider that the objects might be the same. 
+
+In fact, **the two objects need not even be declared to be of the same type if they’re from the same hierarchy**, because a base class reference or pointer can refer or point to an object of a derived class type:
+
 ```cpp
 class Base { ... };
 class Derived: public Base { ... };
 // rb and *pd might actually be the same object 
 void doSomething(const Base& rb, Derived* pd); 
 ```
+
 Below is unsafe code. Suppose you creaste a class that holds a raw pointer to a dynamically allocated bitmap.
+
 ```cpp
 class Bitmap { ... };
 class Widget {
@@ -479,7 +490,7 @@ Widget& Widget::operator=(const Widget& rhs) // unsafe impl. of operator=
   return *this; // see Item 10
 }
 ```
-Why? becasue `rhs` could be the same as `*this`, if this is the case, the delete not only destroys the bitmap for the current object, it destroys the bitmap for `rhs` as well. 
+**Why? becasue `rhs` could be the same as `*this`**, if this is the case, the delete not only destroys the bitmap for the current object, it destroys the bitmap for `rhs` as well. 
 The traditional way to prevent this error is to check for assigment to self via an *identity test*
 ```cpp
 Widget& Widget::operator=(const Widget& rhs)
@@ -490,6 +501,7 @@ Widget& Widget::operator=(const Widget& rhs)
   return *this;
 }
 ```
+
 However, this implementation is exception-unsafe. Why? If the `new Bitmap` expression yields an exception (either because there is insufficient memory for the allocation or because Bitmap’s copy constructor throws one), the Widget will end up holding a pointer to a deleted Bitmap.
 
 To achieve exception safe, one can modify the code to not to delte `pb` until after we have copied what it points to. However, a beter way by using **copy and swap** technique. 
@@ -545,7 +557,7 @@ Customer& Customer::operator=(const Customer& rhs)
   return *this; // see Item 10
 }
 ```
-Everything here looks fine, and in fact everything is fine — until another data member is added to Customer:
+Everything here looks fine, and in fact everything is fine — until another data member `lastTransaction` is added to Customer:
 
 ```cpp
 class Date { ... }; // for dates in time
@@ -559,7 +571,7 @@ class Customer {
 ```
 The code will compile but the existing copying functions are performing a partial copy. (they’re copying the customer’s name, but not its lastTransaction)
 
-One of the most insidious ways this issue can arise is through **inheritance**. Consider:
+One of the most insidious ways this issue can arise is through **inheritance**, for example where derived class copying functions did not invoke their corresponding base class function Consider:
 ```cpp
 class PriorityCustomer: public Customer { // a derived class
   public:
@@ -586,7 +598,7 @@ PriorityCustomer& PriorityCustomer::operator=(const PriorityCustomer& rhs)
 * `PriorityCustomer`’s copying functions will not copy the data members it inherits from `Customer`. 
 * Customer part of the PriorityCustomer object will be initialized by the Customer constructor taking no arguments — by the default constructor. (Assuming it has one. If not, the code won’t compile.)
 
-Instead, derived class copying functions must invoke their corresponding base class functions:
+Instead, **derived class copying functions must invoke their corresponding base class functions:**
 
 ```cpp
 PriorityCustomer::PriorityCustomer(const PriorityCustomer& rhs)
