@@ -39,7 +39,7 @@ const double ASPECT_RATIO = 1.653;
 
 ### Two special cases
 * Defining constant pointers:
-    * _pointer_ should be declared *const*, usually in addition to what the pointer points to. To define a constant char*-based string in a header file, you will do:
+    * For example, if _pointer_ is defined in a header file, it should be declared *const*, usually in addition to what the pointer points to. To define a constant char*-based string in a header file, you will do:
     * ```const char* const authorName = "Scott Meyers"; ``` 
     * or you could also do `const std::string authorName("Scott Meyers");`
 * Class-specific constants. 
@@ -113,7 +113,7 @@ const char* const p = greeting; //const pointer, const data
 <br/>
 
 ```cpp
-void f1(const Widget *pw) // f1&f2 takes a pinter to a cosnt Widget object
+void f1(const Widget *pw) // f1&f2 takes a pointer to a const Widget object
 void f2(Widget const *pw)
 ```
 When what's pointed to is constant, list *const* before and after the type means the same. 
@@ -132,10 +132,15 @@ std::vector<int>::const_iterator clter = vec.begin();
 *clter=10;      //error! *clter is const
 ++clter;        //fine, change clter
 ```
+
 STL terators are models on pointers, so *iterator* acts like a `T* pointer`. 
-* Declaring a iterator const, iterator is not allowed to pointer to something else, but the things it points to may be modifited. 
+* Declaring a iterator const, iterator is not allowed to point to something else, but the object it points to may be modifited. 
 * By using `const_iterator`, the iterator will point to someting that can not be modified. 
 
+---
+</br>
+
+### usage of const and non-const member function 
 ```cpp
 class TextBlock {
     public:
@@ -156,7 +161,8 @@ std::cout<<tb[0];       //call non-const operator[]
 const TextBlock ctb("World")
 std::cout<<ctb[0];      // call const operator[]
 ```
-usage of const and non-const member function
+
+
 
 ```cpp
 void print(const TextBlock& ctb)
@@ -169,10 +175,12 @@ This is more of a realistic usage of const objects in real programs, as a result
 <br/>
 what does it mean for a member function to be const? 
 
-1. Bitwise constness
+1. **Bitwise constness**
     * A member function is const if and only if it doesn't modify any of the object's data members.
-2. Logical constness
+2. **Logical constness**
     * A member function might modify some of the bits in the object on which it's invoked, but only in ways that clients cannot detect.
+
+bitwise constness example:
 
 ```cpp
 class CTextBlock{
@@ -190,6 +198,9 @@ char *pc = &cctb[0];                //call the const operator[] to get a pointer
 ```
 member function that does not act very const could pass bitwise const test. 
 
+</br>
+
+logical constness example:
 ```cpp
 class CTextBlock{
     public:
@@ -211,9 +222,12 @@ class CTextBlock{
         }
 };
 ```
-The function `length()` is logical const, but not bitwise const. 
-*mutable* frees non-static data members from the constrains of bitwise constness. 
+
+* The function `length()` is logical const, but not bitwise const. 
+
+* Also, *mutable* frees non-static data members from the constrains of bitwise constness. 
 <br/>
+
 
 ```cpp
 // code with duplication
@@ -252,7 +266,8 @@ class CTextBlock{
 };
 ```
 
-**Having the non-const member function call the const version is a safe way to avioid code duplication**, even though it requires a cast. However, if you were to call a non-const function from a const one, you'd runn the risk that the object you' promised not to modify would be changed.
+* **Having the non-const member function call the const version is a safe way to avioid code duplication**, even though it requires a cast. 
+* However, if you were to call a non-const function from a const one, you'd runn the risk that the object you' promised not to modify would be changed.
 
 <br/>
 
@@ -326,13 +341,18 @@ If ABEntry had a constructor taking no parameters, it could be impelemnted like 
 **The order of initialization of non-local static objects defined in different translation units.**
 
 A **static object** is one that exists from the time it's constructed untill the end of the program. Static objects are destroyed when the program exits.
-* Local static objects: Static objects inside functions.
-* Non-local static objects: other kinds of static objects.
+* **Local static objects:** Static objects inside functions.
+* **Non-local static objects:** other kinds of static objects.
 
 **Translation unit:** the source code given rise to a signle object file. It's basically a single source file, plus all its #include files. 
 
-**The problem is** if initialization of a non-local static object in one translation unit uses a non-local static object in a different transaltion unit, the object it uses could be uninitialized, becasue the relative order of initialization of non-local static objects definded in different transaltion units is undefined. 
+**The problem** we're concerned with, then, involves at least two seprately compiled source files, each of which contains at least one nonlocal static object (i.e., an object that's global, at namespace scope, or static in a class or at file scope.) And the actual problem is this:
 
+
+if initialization of a non-local static object in one translation unit uses a non-local static object in a different transaltion unit, the object it uses could be uninitialized, becasue the relative order of initialization of non-local static objects definded in different transaltion units is undefined. 
+
+
+See the following example 
 ```cpp
 // Suppose you have a FileSystem class that makes
 // files on the Internet look like they’re local. Since your class makes the
@@ -363,9 +383,15 @@ Directory::Directory( params )
     std::size_t disks = tfs.numDisks(); // use the tfs object
     ...
 }
+
+Directory tempDir(params)
 ```
+
 If client have the code `Directory tempDir(params);` unless tfs is initialized before tempDir, tempDir’s constructor will attempt to use tfs before it’s been initialized. You can NOT garentee this. 
 You should move each non-local static object into its own function, where it's declared static. 
+
+**What to do?** Replace direct accesses to non-local static objects with calls to functions that return references to local static objects, you're guaranteed that the reference you get back will refer to initialized objects. 
+
 
 ```cpp
 class FileSystem { ... };       // as before
@@ -388,7 +414,8 @@ Directory& tempDir() // this replaces the tempDir object; it could be static in 
     return td; // return reference to it
 }
 ```
-C++’s guarantee that local static objects are initialized when the object’s definition is first encountered during a call to that function. So if you replace direct accesses to non-local static objects with calls to functions that return references to local static objects, you’re guaranteed that the references you get back will refer to initialized objects.
+
+**C++’s guarantee that local static objects are initialized when the object’s definition is first encountered during a call to that function.** So if you replace direct accesses to non-local static objects with calls to functions that return references to local static objects, you’re guaranteed that the references you get back will refer to initialized objects.
 
 ___
 **Things to Remember**
